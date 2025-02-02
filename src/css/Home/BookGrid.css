@@ -1,0 +1,179 @@
+.books-container {
+    padding: 0.5rem;
+}
+
+.main-title {
+    font-size: 1.8rem;
+    font-weight: 800;
+    margin-bottom: 2rem;
+    color: #000;
+}
+
+.books-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 1rem;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.book-card {
+    background: #fff;
+    border-radius: 8px;
+    overflow: hidden;
+    transition: all 0.2s ease;
+    border: 1px solid #eee;
+}
+
+.book-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.book-cover-container {
+    position: relative;
+    padding-top: 150%;
+    background: #f5f5f5;
+}
+
+.book-cover {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.book-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(to top, #000, transparent);
+    padding: 1rem 0.5rem 0.5rem;
+    transform: translateY(100%);
+    transition: transform 0.2s ease;
+}
+
+.book-card:hover .book-overlay {
+    transform: translateY(0);
+}
+
+.book-description {
+    color: white;
+    font-size: 0.75rem;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.favorite-icon {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    cursor: pointer;
+    color: #fff;
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
+    opacity: 0;
+    transition: all 0.2s ease;
+}
+
+.book-card:hover .favorite-icon {
+    opacity: 1;
+}
+
+.favorite-icon.is-favorite {
+    opacity: 1;
+    fill: #ff3e3e;
+    color: #ff3e3e;
+}
+
+.book-info {
+    padding: 0.75rem;
+}
+
+.book-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.book-genre {
+    font-size: 0.65rem;
+    color: #666;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.book-rating {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.75rem;
+    color: #666;
+}
+
+.star-icon {
+    color: #ffb700;
+    fill: #ffb700;
+    width: 12px;
+    height: 12px;
+}
+
+.book-title {
+    font-size: 1rem;  /* Título más grande */
+    font-weight: 600;
+    color: #000;
+    margin-bottom: 0.5rem;  /* Más espacio después del título */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.book-author {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    color: #666;
+    font-size: 0.75rem;
+    margin-bottom: 0.25rem;  /* Espacio entre autor y detalles */
+}
+
+.book-author svg {
+    width: 12px;
+    height: 12px;
+}
+
+.book-details {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.book-editorial {
+    font-size: 0.65rem;  /* Editorial más pequeña */
+    color: #666;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.book-year {
+    font-size: 0.65rem;  /* Año más pequeño */
+    color: #666;
+}
+
+@media (max-width: 768px) {
+    .books-grid {
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        gap: 0.75rem;
+    }
+
+    .books-container {
+        padding: 0.75rem;
+    }
+}
