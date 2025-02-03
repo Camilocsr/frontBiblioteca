@@ -47,7 +47,7 @@ const AdminDashboard = () => {
     });
     const [loading, setLoading] = useState(true);
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const [modalOpen, setModalOpen] = useState(false);
+    // const [modalOpen, setModalOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
@@ -184,7 +184,7 @@ const AdminDashboard = () => {
                     </form>
                     <button
                         className="add-button"
-                        onClick={() => setModalOpen(true)}
+                        // onClick={() => setModalOpen(true)}
                     >
                         Agregar Libro
                     </button>
