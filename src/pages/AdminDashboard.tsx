@@ -1,154 +1,257 @@
-// src/pages/AdminDashboard.tsx
-import { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import '../css/admin/AdminDashboard.css';
+import { env } from '../config/envConfig';
 
-interface User {
-    id: string;
-    nombre: string;
-    email: string;
+interface LibroStats {
+    total: number;
+    disponibles: number;
+    prestados: number;
+    reservados: number;
+}
+
+interface Libro {
+    _id: string;
+    titulo: string;
+    autor: string;
+    isbn: string;
+    portada?: string;
+    inventario: {
+        total: number;
+        disponible: number;
+        prestados: number;
+        reservados: number;
+    };
     estado: {
         activo: boolean;
-        vetado: boolean;
+        condicion: string;
     };
-    fechaRegistro: string;
+}
+
+interface PaginationData {
+    libros: Libro[];
+    total: number;
+    paginas: number;
+    paginaActual: number;
+    porPagina: number;
 }
 
 const AdminDashboard = () => {
     const { user } = useAuth();
-    const [activeTab, setActiveTab] = useState<'usuarios' | 'libros' | 'prestamos'>('usuarios');
+    const [libros, setLibros] = useState<Libro[]>([]);
+    const [stats, setStats] = useState<LibroStats>({
+        total: 0,
+        disponibles: 0,
+        prestados: 0,
+        reservados: 0
+    });
+    const [loading, setLoading] = useState(true);
+    const [modalOpen, setModalOpen] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const [totalLibros, setTotalLibros] = useState(0);
+    const [ordenarPor, setOrdenarPor] = useState('createdAt');
+    const [orden, setOrden] = useState<'asc' | 'desc'>('desc');
+    const itemsPorPagina = 10;
 
-    // Datos de prueba
-    const mockUsers: User[] = [
-        {
-            id: '1',
-            nombre: 'Juan Pérez',
-            email: 'juan@example.com',
-            estado: { activo: true, vetado: false },
-            fechaRegistro: '2024-01-15'
-        },
-        {
-            id: '2',
-            nombre: 'María López',
-            email: 'maria@example.com',
-            estado: { activo: true, vetado: true },
-            fechaRegistro: '2024-02-01'
+    useEffect(() => {
+        if (searchTerm) {
+            handleSearch();
+        } else {
+            fetchLibros();
         }
-    ];
+    }, [currentPage, ordenarPor, orden]);
 
-    const renderTabContent = () => {
-        switch (activeTab) {
-            case 'usuarios':
-                return (
-                    <div className="bg-white rounded-lg shadow">
-                        <div className="p-6">
-                            <div className="flex justify-between items-center mb-6">
-                                <h3 className="text-xl font-semibold">Gestión de Usuarios</h3>
-                                <button className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
-                                    Agregar Usuario
-                                </button>
-                            </div>
-                            <div className="overflow-x-auto">
-                                <table className="min-w-full divide-y divide-gray-200">
-                                    <thead className="bg-gray-50">
-                                        <tr>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nombre</th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Estado</th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Acciones</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="bg-white divide-y divide-gray-200">
-                                        {mockUsers.map((user) => (
-                                            <tr key={user.id}>
-                                                <td className="px-6 py-4 whitespace-nowrap">{user.id}</td>
-                                                <td className="px-6 py-4 whitespace-nowrap">{user.nombre}</td>
-                                                <td className="px-6 py-4 whitespace-nowrap">{user.email}</td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <span className={`px-2 py-1 text-xs rounded-full ${user.estado.vetado ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}`}>
-                                                        {user.estado.vetado ? 'Vetado' : 'Activo'}
-                                                    </span>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <button className="text-blue-600 hover:text-blue-900 mr-2">Editar</button>
-                                                    <button className="text-red-600 hover:text-red-900">
-                                                        {user.estado.vetado ? 'Desvetar' : 'Vetar'}
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                );
-            case 'libros':
-                return (
-                    <div className="bg-white rounded-lg shadow p-6">
-                        <div className="flex justify-between items-center mb-6">
-                            <h3 className="text-xl font-semibold">Gestión de Libros</h3>
-                            <button className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
-                                Agregar Libro
-                            </button>
-                        </div>
-                        <p className="text-gray-600">Sección en desarrollo...</p>
-                    </div>
-                );
-            case 'prestamos':
-                return (
-                    <div className="bg-white rounded-lg shadow p-6">
-                        <div className="flex justify-between items-center mb-6">
-                            <h3 className="text-xl font-semibold">Gestión de Préstamos</h3>
-                            <button className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
-                                Nuevo Préstamo
-                            </button>
-                        </div>
-                        <p className="text-gray-600">Sección en desarrollo...</p>
-                    </div>
-                );
-            default:
-                return null;
+    const fetchLibros = async () => {
+        try {
+            setLoading(true);
+            const response = await fetch(
+                `${env.server.endpointGeneral}/libros/paginacion?pagina=${currentPage}&limite=${itemsPorPagina}&ordenarPor=${ordenarPor}&orden=${orden}`
+            );
+            const data: PaginationData = await response.json();
+
+            setLibros(data.libros);
+            setTotalPages(data.paginas);
+            setTotalLibros(data.total);
+
+            // Calcular estadísticas solo si estamos en la primera página
+            if (currentPage === 1) {
+                const statsData = data.libros.reduce((acc: LibroStats, libro: Libro) => ({
+                    total: acc.total + libro.inventario.total,
+                    disponibles: acc.disponibles + libro.inventario.disponible,
+                    prestados: acc.prestados + libro.inventario.prestados,
+                    reservados: acc.reservados + libro.inventario.reservados
+                }), { total: 0, disponibles: 0, prestados: 0, reservados: 0 });
+
+                setStats(statsData);
+            }
+        } catch (error) {
+            console.error('Error al obtener libros:', error);
+        } finally {
+            setLoading(false);
         }
     };
 
+    const handleSearch = async (e?: React.FormEvent) => {
+        if (e) {
+            e.preventDefault();
+        }
+
+        if (!searchTerm.trim()) {
+            fetchLibros();
+            return;
+        }
+
+        try {
+            setLoading(true);
+            const response = await fetch(`/api/libros/buscar?termino=${searchTerm}&pagina=${currentPage}&limite=${itemsPorPagina}`);
+            const data = await response.json();
+
+            setLibros(data.libros);
+            setTotalLibros(data.resultados);
+            setTotalPages(Math.ceil(data.resultados / itemsPorPagina));
+        } catch (error) {
+            console.error('Error en la búsqueda:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleSort = (campo: string) => {
+        setOrdenarPor(campo);
+        setOrden(orden === 'asc' ? 'desc' : 'asc');
+        setCurrentPage(1); // Resetear a primera página al cambiar ordenamiento
+    };
+
+    if (loading) {
+        return (
+            <div className="dashboard-loading">
+                <div className="loader"></div>
+                <p>Cargando dashboard...</p>
+            </div>
+        );
+    }
+
     return (
-        <div className="min-h-screen bg-gray-100 py-6 px-4">
-            <div className="max-w-7xl mx-auto">
-                {/* Header */}
-                <div className="bg-white rounded-lg shadow p-6 mb-6">
-                    <h1 className="text-2xl font-bold text-gray-900">Panel de Administración</h1>
-                    <p className="text-gray-600 mt-1">
-                        Administrador: {user?.nombre} {user?.apellido}
-                    </p>
+        <div className="admin-dashboard">
+            <header className="dashboard-header">
+                <div className="header-content">
+                    <h1>Panel de Administración</h1>
+                    <div className="admin-info">
+                        <span className="admin-name">{user?.nombre} {user?.apellido}</span>
+                        <span className="admin-role">Administrador</span>
+                    </div>
+                </div>
+            </header>
+
+            <div className="stats-container">
+                <div className="stat-card">
+                    <h3>Total Libros</h3>
+                    <p className="stat-number">{totalLibros}</p>
+                </div>
+                <div className="stat-card">
+                    <h3>Disponibles</h3>
+                    <p className="stat-number">{stats.disponibles}</p>
+                </div>
+                <div className="stat-card">
+                    <h3>Prestados</h3>
+                    <p className="stat-number">{stats.prestados}</p>
+                </div>
+                <div className="stat-card">
+                    <h3>Reservados</h3>
+                    <p className="stat-number">{stats.reservados}</p>
+                </div>
+            </div>
+
+            <div className="main-content">
+                <div className="actions-bar">
+                    <form onSubmit={handleSearch} className="search-form">
+                        <input
+                            type="text"
+                            placeholder="Buscar libros..."
+                            value={searchTerm}
+                            onChange={(e) => {
+                                setSearchTerm(e.target.value);
+                                if (!e.target.value) {
+                                    setCurrentPage(1);
+                                    fetchLibros();
+                                }
+                            }}
+                        />
+                        <button type="submit">Buscar</button>
+                    </form>
+                    <button
+                        className="add-button"
+                        onClick={() => setModalOpen(true)}
+                    >
+                        Agregar Libro
+                    </button>
                 </div>
 
-                {/* Tabs de navegación */}
-                <div className="mb-6">
-                    <nav className="flex space-x-4">
-                        <button
-                            onClick={() => setActiveTab('usuarios')}
-                            className={`px-4 py-2 rounded-md ${activeTab === 'usuarios' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'}`}
-                        >
-                            Usuarios
-                        </button>
-                        <button
-                            onClick={() => setActiveTab('libros')}
-                            className={`px-4 py-2 rounded-md ${activeTab === 'libros' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'}`}
-                        >
-                            Libros
-                        </button>
-                        <button
-                            onClick={() => setActiveTab('prestamos')}
-                            className={`px-4 py-2 rounded-md ${activeTab === 'prestamos' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'}`}
-                        >
-                            Préstamos
-                        </button>
-                    </nav>
+                <div className="books-table-container">
+                    <table className="books-table">
+                        <thead>
+                            <tr>
+                                <th>Portada</th>
+                                <th onClick={() => handleSort('titulo')} className="sortable">
+                                    Título {ordenarPor === 'titulo' && (orden === 'asc' ? '↑' : '↓')}
+                                </th>
+                                <th onClick={() => handleSort('autor')} className="sortable">
+                                    Autor {ordenarPor === 'autor' && (orden === 'asc' ? '↑' : '↓')}
+                                </th>
+                                <th>ISBN</th>
+                                <th onClick={() => handleSort('inventario.disponible')} className="sortable">
+                                    Disponibles {ordenarPor === 'inventario.disponible' && (orden === 'asc' ? '↑' : '↓')}
+                                </th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {libros.map((libro) => (
+                                <tr key={libro._id}>
+                                    <td>
+                                        <img
+                                            src={libro.portada || '/placeholder-book.png'}
+                                            alt={libro.titulo}
+                                            className="book-cover"
+                                        />
+                                    </td>
+                                    <td>{libro.titulo}</td>
+                                    <td>{libro.autor}</td>
+                                    <td>{libro.isbn}</td>
+                                    <td>{libro.inventario.disponible}</td>
+                                    <td>
+                                        <span className={`status ${libro.estado.activo ? 'active' : 'inactive'}`}>
+                                            {libro.estado.activo ? 'Activo' : 'Inactivo'}
+                                        </span>
+                                    </td>
+                                    <td className="actions">
+                                        <button className="edit-btn">Editar</button>
+                                        <button className="delete-btn">Eliminar</button>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
                 </div>
 
-                {/* Contenido de la tab activa */}
-                {renderTabContent()}
+                <div className="pagination">
+                    <button
+                        disabled={currentPage === 1}
+                        onClick={() => setCurrentPage(prev => prev - 1)}
+                    >
+                        Anterior
+                    </button>
+                    <span>Página {currentPage} de {totalPages}</span>
+                    <button
+                        disabled={currentPage === totalPages}
+                        onClick={() => setCurrentPage(prev => prev + 1)}
+                    >
+                        Siguiente
+                    </button>
+                </div>
             </div>
         </div>
     );

@@ -58,7 +58,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const login = async (userData: GoogleUserData) => {
         try {
             setError(null);
+            
             const response = await authService.loginWithGoogle(userData);
+
+            console.log(`esto es lo que devulve el server: ${JSON.stringify(response,null,2)}`);
             if (response.success && response.data?.usuario) {
                 setUser(response.data.usuario);
                 if (response.data.token) {
