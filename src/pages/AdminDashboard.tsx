@@ -46,8 +46,6 @@ const AdminDashboard = () => {
         reservados: 0
     });
     const [loading, setLoading] = useState(true);
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    // const [modalOpen, setModalOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
@@ -76,7 +74,6 @@ const AdminDashboard = () => {
             setTotalPages(data.paginas);
             setTotalLibros(data.total);
 
-            // Calcular estadísticas solo si estamos en la primera página
             if (currentPage === 1) {
                 const statsData = data.libros.reduce((acc: LibroStats, libro: Libro) => ({
                     total: acc.total + libro.inventario.total,
@@ -122,52 +119,52 @@ const AdminDashboard = () => {
     const handleSort = (campo: string) => {
         setOrdenarPor(campo);
         setOrden(orden === 'asc' ? 'desc' : 'asc');
-        setCurrentPage(1); // Resetear a primera página al cambiar ordenamiento
+        setCurrentPage(1);
     };
 
     if (loading) {
         return (
-            <div className="dashboard-loading">
-                <div className="loader"></div>
+            <div className="lib-loading">
+                <div className="lib-spinner"></div>
                 <p>Cargando dashboard...</p>
             </div>
         );
     }
 
     return (
-        <div className="admin-dashboard">
-            <header className="dashboard-header">
-                <div className="header-content">
+        <div className="lib-main">
+            <header className="lib-header">
+                <div className="lib-header-wrap">
                     <h1>Panel de Administración</h1>
-                    <div className="admin-info">
-                        <span className="admin-name">{user?.nombre} {user?.apellido}</span>
-                        <span className="admin-role">Administrador</span>
+                    <div className="lib-user-info">
+                        <span className="lib-user-name">{user?.nombre} {user?.apellido}</span>
+                        <span className="lib-user-role">Administrador</span>
                     </div>
                 </div>
             </header>
 
-            <div className="stats-container">
-                <div className="stat-card">
+            <div className="lib-stats-grid">
+                <div className="lib-stat-box">
                     <h3>Total Libros</h3>
-                    <p className="stat-number">{totalLibros}</p>
+                    <p className="lib-stat-number">{totalLibros}</p>
                 </div>
-                <div className="stat-card">
+                <div className="lib-stat-box">
                     <h3>Disponibles</h3>
-                    <p className="stat-number">{stats.disponibles}</p>
+                    <p className="lib-stat-number">{stats.disponibles}</p>
                 </div>
-                <div className="stat-card">
+                <div className="lib-stat-box">
                     <h3>Prestados</h3>
-                    <p className="stat-number">{stats.prestados}</p>
+                    <p className="lib-stat-number">{stats.prestados}</p>
                 </div>
-                <div className="stat-card">
+                <div className="lib-stat-box">
                     <h3>Reservados</h3>
-                    <p className="stat-number">{stats.reservados}</p>
+                    <p className="lib-stat-number">{stats.reservados}</p>
                 </div>
             </div>
 
-            <div className="main-content">
-                <div className="actions-bar">
-                    <form onSubmit={handleSearch} className="search-form">
+            <div className="lib-content">
+                <div className="lib-toolbar">
+                    <form onSubmit={handleSearch} className="lib-search-form">
                         <input
                             type="text"
                             placeholder="Buscar libros..."
@@ -182,27 +179,24 @@ const AdminDashboard = () => {
                         />
                         <button type="submit">Buscar</button>
                     </form>
-                    <button
-                        className="add-button"
-                        // onClick={() => setModalOpen(true)}
-                    >
+                    <button className="lib-add-button">
                         Agregar Libro
                     </button>
                 </div>
 
-                <div className="books-table-container">
-                    <table className="books-table">
+                <div className="lib-table-container">
+                    <table className="lib-table">
                         <thead>
                             <tr>
                                 <th>Portada</th>
-                                <th onClick={() => handleSort('titulo')} className="sortable">
+                                <th onClick={() => handleSort('titulo')} className="lib-sortable">
                                     Título {ordenarPor === 'titulo' && (orden === 'asc' ? '↑' : '↓')}
                                 </th>
-                                <th onClick={() => handleSort('autor')} className="sortable">
+                                <th onClick={() => handleSort('autor')} className="lib-sortable">
                                     Autor {ordenarPor === 'autor' && (orden === 'asc' ? '↑' : '↓')}
                                 </th>
                                 <th>ISBN</th>
-                                <th onClick={() => handleSort('inventario.disponible')} className="sortable">
+                                <th onClick={() => handleSort('inventario.disponible')} className="lib-sortable">
                                     Disponibles {ordenarPor === 'inventario.disponible' && (orden === 'asc' ? '↑' : '↓')}
                                 </th>
                                 <th>Estado</th>
@@ -216,7 +210,7 @@ const AdminDashboard = () => {
                                         <img
                                             src={libro.portada || '/placeholder-book.png'}
                                             alt={libro.titulo}
-                                            className="book-cover"
+                                            className="lib-book-cover"
                                         />
                                     </td>
                                     <td>{libro.titulo}</td>
@@ -224,13 +218,13 @@ const AdminDashboard = () => {
                                     <td>{libro.isbn}</td>
                                     <td>{libro.inventario.disponible}</td>
                                     <td>
-                                        <span className={`status ${libro.estado.activo ? 'active' : 'inactive'}`}>
+                                        <span className={`lib-status ${libro.estado.activo ? 'lib-status-active' : 'lib-status-inactive'}`}>
                                             {libro.estado.activo ? 'Activo' : 'Inactivo'}
                                         </span>
                                     </td>
-                                    <td className="actions">
-                                        <button className="edit-btn">Editar</button>
-                                        <button className="delete-btn">Eliminar</button>
+                                    <td className="lib-actions">
+                                        <button className="lib-edit-btn">Editar</button>
+                                        <button className="lib-delete-btn">Eliminar</button>
                                     </td>
                                 </tr>
                             ))}
@@ -238,7 +232,7 @@ const AdminDashboard = () => {
                     </table>
                 </div>
 
-                <div className="pagination">
+                <div className="lib-pagination">
                     <button
                         disabled={currentPage === 1}
                         onClick={() => setCurrentPage(prev => prev - 1)}
