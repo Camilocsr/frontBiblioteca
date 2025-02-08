@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { env } from '../config/envConfig';
-import '../css/users/UserDashboard.css'
+import '../css/users/UserDashboard.css';
+import ReturnBooks from '../components/users/ReturnBooks';
 
 interface Book {
     _id: string;
@@ -42,6 +43,7 @@ interface FilterState {
 
 const UserDashboard = () => {
     const { user } = useAuth();
+    const [activeTab, setActiveTab] = useState<'catalog' | 'returns'>('catalog');
     const [books, setBooks] = useState<Book[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedBook, setSelectedBook] = useState<Book | null>(null);
@@ -97,8 +99,10 @@ const UserDashboard = () => {
     };
 
     useEffect(() => {
-        fetchBooks();
-    }, [filters]);
+        if (activeTab === 'catalog') {
+            fetchBooks();
+        }
+    }, [filters, activeTab]);
 
     const handleFilterChange = (name: keyof FilterState, value: string | boolean) => {
         setFilters(prev => ({
@@ -119,7 +123,7 @@ const UserDashboard = () => {
                 },
                 body: JSON.stringify({
                     libroId: book._id,
-                    email: user?.email, // Enviamos el email en lugar del ID
+                    email: user?.email,
                     tipo: 'alquiler',
                     diasPrestamo: 14,
                 }),
@@ -169,6 +173,123 @@ const UserDashboard = () => {
         </div>
     );
 
+    const renderCatalog = () => (
+        <div className="library-content">
+            <div className="library-filters">
+                <input
+                    type="text"
+                    placeholder="Buscar por título..."
+                    value={filters.titulo}
+                    onChange={(e) => handleFilterChange('titulo', e.target.value)}
+                    className="library-input"
+                />
+                <input
+                    type="text"
+                    placeholder="Buscar por autor..."
+                    value={filters.autor}
+                    onChange={(e) => handleFilterChange('autor', e.target.value)}
+                    className="library-input"
+                />
+                <select
+                    value={filters.genero}
+                    onChange={(e) => handleFilterChange('genero', e.target.value)}
+                    className="library-select"
+                >
+                    <option value="">Todos los géneros</option>
+                    <option value="ficcion">Ficción</option>
+                    <option value="no-ficcion">No Ficción</option>
+                    <option value="romance">Romance</option>
+                    <option value="misterio">Misterio</option>
+                    <option value="ciencia-ficcion">Ciencia Ficción</option>
+                </select>
+            </div>
+
+            {loading ? (
+                <div className="library-loading">
+                    <span className="sr-only">Cargando...</span>
+                </div>
+            ) : (
+                <>
+                    <div className="library-books-grid">
+                        {books.map((book) => (
+                            <div key={book._id} className="library-book-item">
+                                <div className="library-book-img-wrap">
+                                    {book.portada ? (
+                                        <img
+                                            src={book.portada}
+                                            alt={book.titulo}
+                                            className="library-book-img"
+                                        />
+                                    ) : (
+                                        <div className="library-book-placeholder">
+                                            📚
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="library-book-content">
+                                    <h3 className="library-book-title">{book.titulo}</h3>
+                                    <p className="library-book-author">{book.autor}</p>
+                                    <p className="library-book-info">
+                                        <strong>Editorial:</strong> {book.editorial}
+                                    </p>
+                                    <p className="library-book-info">
+                                        <strong>Año:</strong> {book.añoPublicacion}
+                                    </p>
+                                    <p className="library-book-info">
+                                        <strong>ISBN:</strong> {book.isbn}
+                                    </p>
+
+                                    <div className="library-status-wrap">
+                                        <span className={`library-status ${book.inventario.disponible > 0
+                                            ? 'library-status-available'
+                                            : 'library-status-unavailable'
+                                            }`}>
+                                            {book.inventario.disponible > 0 ? 'Disponible' : 'No disponible'}
+                                        </span>
+                                        <span className="library-stock">
+                                            {book.inventario.disponible}/{book.inventario.total} disponibles
+                                        </span>
+                                    </div>
+
+                                    <button
+                                        className="library-rent-btn"
+                                        disabled={book.inventario.disponible === 0}
+                                        onClick={() => {
+                                            setSelectedBook(book);
+                                            setShowModal(true);
+                                        }}
+                                    >
+                                        Alquilar
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    <div className="library-pagination">
+                        <button
+                            onClick={() => fetchBooks(paginationData.paginaActual - 1)}
+                            disabled={paginationData.paginaActual === 1}
+                            className="library-page-btn"
+                        >
+                            Anterior
+                        </button>
+                        <span className="library-page-info">
+                            Página {paginationData.paginaActual} de {paginationData.paginas}
+                        </span>
+                        <button
+                            onClick={() => fetchBooks(paginationData.paginaActual + 1)}
+                            disabled={paginationData.paginaActual === paginationData.paginas}
+                            className="library-page-btn"
+                        >
+                            Siguiente
+                        </button>
+                    </div>
+                </>
+            )}
+        </div>
+    );
+
     return (
         <div className="library-main">
             <div className="library-container">
@@ -183,120 +304,30 @@ const UserDashboard = () => {
                     </div>
                 </div>
 
-                <div className="library-content">
-                    <div className="library-filters">
-                        <input
-                            type="text"
-                            placeholder="Buscar por título..."
-                            value={filters.titulo}
-                            onChange={(e) => handleFilterChange('titulo', e.target.value)}
-                            className="library-input"
-                        />
-                        <input
-                            type="text"
-                            placeholder="Buscar por autor..."
-                            value={filters.autor}
-                            onChange={(e) => handleFilterChange('autor', e.target.value)}
-                            className="library-input"
-                        />
-                        <select
-                            value={filters.genero}
-                            onChange={(e) => handleFilterChange('genero', e.target.value)}
-                            className="library-select"
+                <div className="flex justify-center mb-4">
+                    <div className="inline-flex rounded-md shadow-sm" role="group">
+                        <button
+                            onClick={() => setActiveTab('catalog')}
+                            className={`px-4 py-2 text-sm font-medium border rounded-l-lg ${activeTab === 'catalog'
+                                ? 'bg-blue-500 text-white'
+                                : 'bg-white text-gray-700 hover:bg-gray-50'
+                                }`}
                         >
-                            <option value="">Todos los géneros</option>
-                            <option value="ficcion">Ficción</option>
-                            <option value="no-ficcion">No Ficción</option>
-                            <option value="romance">Romance</option>
-                            <option value="misterio">Misterio</option>
-                            <option value="ciencia-ficcion">Ciencia Ficción</option>
-                        </select>
+                            Catálogo
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('returns')}
+                            className={`px-4 py-2 text-sm font-medium border rounded-r-lg ${activeTab === 'returns'
+                                ? 'bg-blue-500 text-white'
+                                : 'bg-white text-gray-700 hover:bg-gray-50'
+                                }`}
+                        >
+                            Mis Préstamos
+                        </button>
                     </div>
-
-                    {loading ? (
-                        <div className="library-loading">
-                            <span className="sr-only">Cargando...</span>
-                        </div>
-                    ) : (
-                        <>
-                            <div className="library-books-grid">
-                                {books.map((book) => (
-                                    <div key={book._id} className="library-book-item">
-                                        <div className="library-book-img-wrap">
-                                            {book.portada ? (
-                                                <img
-                                                    src={book.portada}
-                                                    alt={book.titulo}
-                                                    className="library-book-img"
-                                                />
-                                            ) : (
-                                                <div className="library-book-placeholder">
-                                                    📚
-                                                </div>
-                                            )}
-                                        </div>
-                                        <div className="library-book-content">
-                                            <h3 className="library-book-title">{book.titulo}</h3>
-                                            <p className="library-book-author">{book.autor}</p>
-                                            <p className="library-book-info">
-                                                <strong>Editorial:</strong> {book.editorial}
-                                            </p>
-                                            <p className="library-book-info">
-                                                <strong>Año:</strong> {book.añoPublicacion}
-                                            </p>
-                                            <p className="library-book-info">
-                                                <strong>ISBN:</strong> {book.isbn}
-                                            </p>
-
-                                            <div className="library-status-wrap">
-                                                <span className={`library-status ${book.inventario.disponible > 0
-                                                    ? 'library-status-available'
-                                                    : 'library-status-unavailable'
-                                                    }`}>
-                                                    {book.inventario.disponible > 0 ? 'Disponible' : 'No disponible'}
-                                                </span>
-                                                <span className="library-stock">
-                                                    {book.inventario.disponible}/{book.inventario.total} disponibles
-                                                </span>
-                                            </div>
-
-                                            <button
-                                                className="library-rent-btn"
-                                                disabled={book.inventario.disponible === 0}
-                                                onClick={() => {
-                                                    setSelectedBook(book);
-                                                    setShowModal(true);
-                                                }}
-                                            >
-                                                Alquilar
-                                            </button>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-
-                            <div className="library-pagination">
-                                <button
-                                    onClick={() => fetchBooks(paginationData.paginaActual - 1)}
-                                    disabled={paginationData.paginaActual === 1}
-                                    className="library-page-btn"
-                                >
-                                    Anterior
-                                </button>
-                                <span className="library-page-info">
-                                    Página {paginationData.paginaActual} de {paginationData.paginas}
-                                </span>
-                                <button
-                                    onClick={() => fetchBooks(paginationData.paginaActual + 1)}
-                                    disabled={paginationData.paginaActual === paginationData.paginas}
-                                    className="library-page-btn"
-                                >
-                                    Siguiente
-                                </button>
-                            </div>
-                        </>
-                    )}
                 </div>
+
+                {activeTab === 'catalog' ? renderCatalog() : <ReturnBooks />}
             </div>
 
             {showModal && selectedBook && <Modal book={selectedBook} />}
