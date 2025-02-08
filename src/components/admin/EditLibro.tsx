@@ -1,6 +1,52 @@
 import React, { useState } from 'react';
 import { env } from '../../config/envConfig';
-import Libro from '../../types';
+
+interface Ubicacion {
+    seccion: string;
+    estante: string;
+    nivel: number;
+}
+
+interface Inventario {
+    total: number;
+    disponible: number;
+    prestados: number;
+    reservados: number;
+}
+
+interface PrecioAlquiler {
+    diario: number;
+    deposito: number;
+}
+
+interface Precio {
+    compra: number;
+    alquiler: PrecioAlquiler;
+}
+
+interface Estado {
+    activo: boolean;
+    condicion: 'nuevo' | 'bueno' | 'regular' | 'malo';
+}
+
+interface Libro {
+    _id?: string;
+    titulo: string;
+    autor: string;
+    isbn: string;
+    editorial: string;
+    añoPublicacion: number;
+    idioma: string;
+    descripcion: string;
+    ubicacion: Ubicacion;
+    inventario: Inventario;
+    precio: Precio;
+    estado: Estado;
+    generos: string[];
+    palabrasClave: string[];
+}
+
+type FormData = Omit<Libro, '_id'>;
 
 interface EditLibroFormProps {
     libro: Libro;
@@ -8,8 +54,33 @@ interface EditLibroFormProps {
     onSuccess: () => void;
 }
 
+type Primitive = string | number | boolean | undefined | null;
+
+type PathImpl<T, Key extends keyof T> =
+    Key extends string
+    ? T[Key] extends Primitive
+    ? Key
+    : T[Key] extends Array<unknown>
+    ? Key
+    : T[Key] extends Record<string, unknown>
+    ? `${Key}.${PathImpl<T[Key], Exclude<keyof T[Key], keyof Array<unknown>>> & string}` | Key
+    : Key
+    : never;
+
+type Path<T> = PathImpl<T, keyof T> | keyof T;
+
+const getNestedValue = (obj: FormData, path: Path<FormData>): unknown => {
+    const keys = path.split('.');
+    return keys.reduce<unknown>((acc: unknown, key: string) => {
+        if (acc && typeof acc === 'object' && acc !== null && key in acc) {
+            return (acc as Record<string, unknown>)[key];
+        }
+        return undefined;
+    }, obj);
+};
+
 const EditLibroForm: React.FC<EditLibroFormProps> = ({ libro, onClose, onSuccess }) => {
-    const [formData, setFormData] = useState({
+    const [formData, setFormData] = useState<FormData>({
         titulo: libro.titulo,
         autor: libro.autor,
         isbn: libro.isbn,
@@ -46,110 +117,77 @@ const EditLibroForm: React.FC<EditLibroFormProps> = ({ libro, onClose, onSuccess
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const handleInputChange = (
+        e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+    ): void => {
         const { name, value, type } = e.target;
 
-        // Manejar cambios en campos anidados
-        const updateNestedState = (prevState: any) => {
+        setFormData(prevState => {
+            const newState = { ...prevState };
             const keys = name.split('.');
-            if (keys.length > 1) {
-                const [parent, child] = keys;
-                return {
-                    ...prevState,
-                    [parent]: {
-                        ...prevState[parent],
-                        [child]: type === 'number' ? Number(value) : value
-                    }
-                };
-            }
-            return {
-                ...prevState,
-                [name]: type === 'number' ? Number(value) : value
-            };
-        };
 
-        setFormData(updateNestedState);
+            let current: Record<string, unknown> = newState;
+            const lastKey = keys[keys.length - 1];
+
+            for (let i = 0; i < keys.length - 1; i++) {
+                current = current[keys[i]] as Record<string, unknown>;
+            }
+
+            current[lastKey] = type === 'number' ? Number(value) : value;
+            return newState as FormData;
+        });
     };
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
         e.preventDefault();
         setLoading(true);
         setError('');
-    
+
         try {
-            // Validar campos requeridos
             const requiredFields = [
-                'titulo', 'autor', 'isbn', 'editorial', 'añoPublicacion',
-                'idioma', 'ubicacion.seccion', 'ubicacion.estante',
-                'ubicacion.nivel', 'inventario.total', 'precio.compra',
-                'precio.alquiler.diario', 'precio.alquiler.deposito'
-            ];
-    
+                'titulo',
+                'autor',
+                'isbn',
+                'editorial',
+                'añoPublicacion',
+                'idioma',
+                'ubicacion.seccion',
+                'ubicacion.estante',
+                'ubicacion.nivel',
+                'inventario.total',
+                'precio.compra',
+                'precio.alquiler.diario',
+                'precio.alquiler.deposito'
+            ] as const;
+
             const missingFields = requiredFields.filter(field => {
-                const value = field.split('.').reduce((obj, key) => obj[key], formData);
+                const value = getNestedValue(formData, field as Path<FormData>);
                 return value === undefined || value === null || value === '';
             });
-    
+
             if (missingFields.length > 0) {
                 throw new Error(`Campos requeridos faltantes: ${missingFields.join(', ')}`);
             }
-    
-            // Preparar datos para envío
+
             const submissionData = {
-                titulo: formData.titulo,
-                autor: formData.autor,
-                isbn: formData.isbn,
-                editorial: formData.editorial,
-                añoPublicacion: formData.añoPublicacion,
-                idioma: formData.idioma,
-                descripcion: formData.descripcion || '',
-                ubicacion: {
-                    seccion: formData.ubicacion.seccion,
-                    estante: formData.ubicacion.estante,
-                    nivel: formData.ubicacion.nivel
-                },
-                inventario: {
-                    total: formData.inventario.total,
-                    disponible: formData.inventario.total,
-                    prestados: 0,
-                    reservados: 0
-                },
-                precio: {
-                    compra: formData.precio.compra,
-                    alquiler: {
-                        diario: formData.precio.alquiler.diario,
-                        deposito: formData.precio.alquiler.deposito
-                    }
-                },
-                estado: {
-                    activo: formData.estado.activo,
-                    condicion: formData.estado.condicion
-                },
+                ...formData,
                 generos: formData.generos.filter(Boolean),
                 palabrasClave: formData.palabrasClave.filter(Boolean)
             };
-    
-            // Convertir a JSON
+
             const jsonData = JSON.stringify(submissionData);
-    
-            console.log('Datos a enviar:', jsonData);
-    
-            // Preparar FormData
             const formDataToSend = new FormData();
             formDataToSend.append('datos', jsonData);
-    
-            // Agregar portada si existe
+
             if (portada) {
                 formDataToSend.append('portada', portada);
             }
-    
-            // Verificar token de autenticación
+
             const token = localStorage.getItem('token');
             if (!token) {
                 throw new Error('No hay token de autenticación');
             }
-    
-            // Realizar la solicitud de actualización
+
             const response = await fetch(`${env.server.endpointGeneral}/libros/${libro._id}`, {
                 method: 'PUT',
                 headers: {
@@ -157,31 +195,19 @@ const EditLibroForm: React.FC<EditLibroFormProps> = ({ libro, onClose, onSuccess
                 },
                 body: formDataToSend
             });
-    
-            // Manejo detallado de la respuesta
+
             const responseText = await response.text();
-            console.log('Respuesta del servidor:', responseText);
-    
+
             if (!response.ok) {
-                let errorData;
+                let errorData: { mensaje?: string };
                 try {
                     errorData = JSON.parse(responseText);
                 } catch {
                     errorData = { mensaje: responseText };
                 }
-                
-                console.error('Error en la respuesta:', errorData);
                 throw new Error(errorData.mensaje || 'Error al actualizar el libro');
             }
-    
-            // Parsear respuesta exitosa
-            try {
-                const responseData = JSON.parse(responseText);
-                console.log('Libro actualizado:', responseData);
-            } catch (parseError) {
-                console.error('Error al parsear respuesta:', parseError);
-            }
-    
+
             onSuccess();
             onClose();
         } catch (error) {
@@ -191,6 +217,7 @@ const EditLibroForm: React.FC<EditLibroFormProps> = ({ libro, onClose, onSuccess
             setLoading(false);
         }
     };
+
     return (
         <div className="lib-modal-overlay">
             <div className="lib-modal">
@@ -435,7 +462,7 @@ const EditLibroForm: React.FC<EditLibroFormProps> = ({ libro, onClose, onSuccess
                             type="file"
                             id="portada"
                             name="portada"
-                            onChange={(e) => {
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                                 const files = e.target.files;
                                 if (files && files[0]) {
                                     setPortada(files[0]);
@@ -446,10 +473,19 @@ const EditLibroForm: React.FC<EditLibroFormProps> = ({ libro, onClose, onSuccess
                     </div>
 
                     <div className="lib-form-actions">
-                        <button type="button" onClick={onClose} disabled={loading}>
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            disabled={loading}
+                            className="lib-button-secondary"
+                        >
                             Cancelar
                         </button>
-                        <button type="submit" disabled={loading}>
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            className="lib-button-primary"
+                        >
                             {loading ? 'Guardando...' : 'Guardar Cambios'}
                         </button>
                     </div>

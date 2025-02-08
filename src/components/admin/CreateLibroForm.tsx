@@ -1,14 +1,65 @@
 import React, { useState } from 'react';
 import { env } from '../../config/envConfig';
-import '../../css/admin/fromCreateLibro.css'
+import '../../css/admin/fromCreateLibro.css';
+
+interface Ubicacion {
+    seccion: string;
+    estante: string;
+    nivel: number;
+}
+
+interface Inventario {
+    total: number;
+    disponible?: number;
+    prestados?: number;
+    reservados?: number;
+}
+
+interface PrecioAlquiler {
+    diario: number;
+    deposito: number;
+}
+
+interface Precio {
+    compra: number;
+    alquiler: PrecioAlquiler;
+}
+
+interface Estado {
+    activo: boolean;
+    condicion: 'nuevo' | 'bueno' | 'regular' | 'malo';
+}
+
+interface LibroFormData {
+    titulo: string;
+    autor: string;
+    isbn: string;
+    editorial: string;
+    añoPublicacion: number;
+    idioma: string;
+    descripcion: string;
+    ubicacion: Ubicacion;
+    inventario: Inventario;
+    precio: Precio;
+    estado: Estado;
+    generos: string[];
+    palabrasClave: string[];
+}
 
 interface CreateLibroFormProps {
     onClose: () => void;
     onSuccess: () => void;
 }
 
+// Tipo para valores anidados
+type NestedKeyOf<ObjectType extends object> = {
+    [Key in keyof ObjectType & (string | number)]: ObjectType[Key] extends object
+    ? `${Key}` | `${Key}.${NestedKeyOf<ObjectType[Key]>}`
+    : `${Key}`;
+}[keyof ObjectType & (string | number)];
+
 const CreateLibroForm: React.FC<CreateLibroFormProps> = ({ onClose, onSuccess }) => {
-    const [formData, setFormData] = useState({
+    const [formData, setFormData] = useState<LibroFormData>({
         titulo: '',
         autor: '',
         isbn: '',
@@ -27,8 +78,8 @@ const CreateLibroForm: React.FC<CreateLibroFormProps> = ({ onClose, onSuccess })
         precio: {
             compra: 0,
             alquiler: {
-                diario: 0.50,  // Valor mínimo por defecto
-                deposito: 10.00  // Valor mínimo por defecto
+                diario: 0.50,
+                deposito: 10.00
             }
         },
         estado: {
@@ -42,29 +93,45 @@ const CreateLibroForm: React.FC<CreateLibroFormProps> = ({ onClose, onSuccess })
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    // Función auxiliar para verificar si un campo está vacío
+    const isEmptyValue = (value: unknown): boolean => {
+        return value === undefined || value === null || value === '' ||
+            (typeof value === 'number' && isNaN(value));
+    };
+
+    const getNestedValue = (
+        obj: LibroFormData,
+        path: string
+    ): unknown => {
+        return path.split('.').reduce((current: unknown, key: string) => {
+            if (current && typeof current === 'object') {
+                return (current as Record<string, unknown>)[key];
+            }
+            return undefined;
+        }, obj as unknown);
+    };
+
+    const handleInputChange = (
+        e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+    ) => {
         const { name, value, type } = e.target;
 
-        // Manejar cambios en campos anidados
-        const updateNestedState = (prevState: any) => {
+        setFormData(prev => {
+            const newData = { ...prev };
             const keys = name.split('.');
-            if (keys.length > 1) {
-                const [parent, child] = keys;
-                return {
-                    ...prevState,
-                    [parent]: {
-                        ...prevState[parent],
-                        [child]: type === 'number' ? Number(value) : value
-                    }
-                };
-            }
-            return {
-                ...prevState,
-                [name]: type === 'number' ? Number(value) : value
-            };
-        };
+            let current: Record<string, unknown> = newData;
 
-        setFormData(updateNestedState);
+            // Navegar hasta el penúltimo nivel
+            for (let i = 0; i < keys.length - 1; i++) {
+                current = current[keys[i]] as Record<string, unknown>;
+            }
+
+            // Establecer el valor en el último nivel
+            const finalKey = keys[keys.length - 1];
+            current[finalKey] = type === 'number' ? Number(value) : value;
+
+            return newData as LibroFormData;
+        });
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -73,22 +140,31 @@ const CreateLibroForm: React.FC<CreateLibroFormProps> = ({ onClose, onSuccess })
         setError('');
 
         try {
-            // Validar campos requeridos
-            const camposFaltantes = [
-                'titulo', 'autor', 'isbn', 'editorial', 'añoPublicacion', 
-                'idioma', 'ubicacion.seccion', 'ubicacion.estante', 
-                'ubicacion.nivel', 'inventario.total', 'precio.compra', 
-                'precio.alquiler.diario', 'precio.alquiler.deposito'
-            ].filter(campo => {
-                const valor = campo.split('.').reduce((obj, key) => obj[key], formData);
-                return !valor && valor !== 0;
+            const camposRequeridos: NestedKeyOf<LibroFormData>[] = [
+                'titulo',
+                'autor',
+                'isbn',
+                'editorial',
+                'añoPublicacion',
+                'idioma',
+                'ubicacion.seccion',
+                'ubicacion.estante',
+                'ubicacion.nivel',
+                'inventario.total',
+                'precio.compra',
+                'precio.alquiler.diario',
+                'precio.alquiler.deposito'
+            ];
+
+            const camposFaltantes = camposRequeridos.filter(campo => {
+                const valor = getNestedValue(formData, campo);
+                return isEmptyValue(valor);
             });
 
             if (camposFaltantes.length > 0) {
                 throw new Error(`Campos requeridos faltantes: ${camposFaltantes.join(', ')}`);
             }
 
-            // Preparar datos para envío
             const submissionData = {
                 ...formData,
                 generos: formData.generos.filter(Boolean),
@@ -103,7 +179,7 @@ const CreateLibroForm: React.FC<CreateLibroFormProps> = ({ onClose, onSuccess })
 
             const formDataToSend = new FormData();
             formDataToSend.append('datos', JSON.stringify(submissionData));
-            
+
             if (portada) {
                 formDataToSend.append('portada', portada);
             }
@@ -122,7 +198,7 @@ const CreateLibroForm: React.FC<CreateLibroFormProps> = ({ onClose, onSuccess })
             });
 
             if (!response.ok) {
-                const errorData = await response.json();
+                const errorData = await response.json() as { mensaje: string };
                 throw new Error(errorData.mensaje || 'Error al crear el libro');
             }
 
@@ -134,6 +210,7 @@ const CreateLibroForm: React.FC<CreateLibroFormProps> = ({ onClose, onSuccess })
             setLoading(false);
         }
     };
+
 
     return (
         <div className="lib-modal-overlay">
