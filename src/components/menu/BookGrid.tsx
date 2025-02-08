@@ -1,67 +1,40 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { BookOpen, Star, Heart } from 'lucide-react';
 import '../../css/Home/BookGrid.css';
 import axios from 'axios';
 import { env } from '../../config/envConfig';
 
-// Definir la interfaz para un libro
-interface Ubicacion {
-  seccion: string;
-  estante: string;
-  nivel: number;
-}
-
-interface Inventario {
-  total: number;
-  disponible: number;
-  prestados: number;
-  reservados: number;
-}
-
-interface Precio {
-  alquiler: {
-    diario: number;
-    deposito: number;
-  };
-  compra: number;
-}
-
-interface Estado {
-  activo: boolean;
-  condicion: string;
-}
-
-interface Libro {
+interface Book {
   _id: string;
-  isbn: string;
   titulo: string;
   autor: string;
+  generos: string[];
+  portada: string;
+  descripcion: string;
+  estado: { activo: boolean };
+  precio: { alquiler: { diario: number } };
   editorial: string;
   añoPublicacion: number;
-  generos: string[];
-  idioma: string;
-  descripcion: string;
-  portada: string;
-  palabrasClave: string[];
-  createdAt: string;
-  updatedAt: string;
-  ubicacion: Ubicacion;
-  inventario: Inventario;
-  precio: Precio;
-  estado: Estado;
 }
 
-// Tipar el estado del componente
-const BookGrid: React.FC = () => {
-  const [books, setBooks] = useState<Libro[]>([]); // Aquí tipamos el estado `books` como un arreglo de `Libro`
-  const [loading, setLoading] = useState<boolean>(true);
+const BookGrid = () => {
+  const [books, setBooks] = useState<Book[]>([]); // <-- Tipar el estado
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const limit = 10;
 
   useEffect(() => {
     const fetchBooks = async () => {
       try {
-        const response = await axios.get(`${env.server.endpointGeneral}/libros`);
-        setBooks(response.data.libros);
+        const response = await axios.get<{ libros: Book[]; paginas: number }>(
+          `${env.server.endpointGeneral}/libros/paginacion`,
+          { params: { pagina: page, limite: limit } }
+        );
+
+        setBooks(response.data.libros || []);
+        setTotalPages(response.data.paginas || 1);
         setLoading(false);
       } catch {
         setError('Error al cargar los libros');
@@ -70,7 +43,7 @@ const BookGrid: React.FC = () => {
     };
 
     fetchBooks();
-  }, []); // El arreglo vacío asegura que se ejecute solo una vez al cargar el componente
+  }, [page]);
 
   if (loading) return <p>Cargando...</p>;
   if (error) return <p>{error}</p>;
@@ -86,12 +59,8 @@ const BookGrid: React.FC = () => {
               <div className="book-overlay">
                 <p className="book-description">{book.descripcion}</p>
               </div>
-              <Heart
-                className={`favorite-icon ${book.estado.activo ? 'is-favorite' : ''}`}
-                size={24}
-              />
+              <Heart className={`favorite-icon ${book.estado.activo ? 'is-favorite' : ''}`} size={24} />
             </div>
-
             <div className="book-info">
               <div className="book-header">
                 <span className="book-genre">{book.generos.join(', ')}</span>
@@ -100,20 +69,27 @@ const BookGrid: React.FC = () => {
                   <span>{book.precio.alquiler.diario || 'N/A'}</span>
                 </div>
               </div>
-
               <h2 className="book-title">{book.titulo}</h2>
               <div className="book-author">
                 <BookOpen size={16} />
                 <span>{book.autor}</span>
               </div>
-
               <div className="book-details">
-                <span className="book-editorial">editorial: {book.editorial}</span>
+                <span className="book-editorial">Editorial: {book.editorial}</span>
                 <span className="book-year">{book.añoPublicacion}</span>
               </div>
             </div>
           </div>
         ))}
+      </div>
+      <div className="pagination">
+        <button disabled={page === 1} onClick={() => setPage(page - 1)}>
+          Anterior
+        </button>
+        <span>Página {page} de {totalPages}</span>
+        <button disabled={page === totalPages} onClick={() => setPage(page + 1)}>
+          Siguiente
+        </button>
       </div>
     </div>
   );
