@@ -20,7 +20,7 @@ function App() {
               <Route
                 path="/dashboard"
                 element={
-                  <ProtectedRoute>
+                  <ProtectedRoute requiredRole="usuario">
                     <UserDashboard />
                   </ProtectedRoute>
                 }
