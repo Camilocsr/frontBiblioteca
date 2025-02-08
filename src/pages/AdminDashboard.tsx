@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import '../css/admin/AdminDashboard.css';
 import { env } from '../config/envConfig';
+import CreateLibroForm from '../components/admin/CreateLibroForm';
 
 interface LibroStats {
     total: number;
@@ -36,6 +37,7 @@ interface PaginationData {
     porPagina: number;
 }
 
+// Componente Principal AdminDashboard
 const AdminDashboard = () => {
     const { user } = useAuth();
     const [libros, setLibros] = useState<Libro[]>([]);
@@ -52,6 +54,7 @@ const AdminDashboard = () => {
     const [totalLibros, setTotalLibros] = useState(0);
     const [ordenarPor, setOrdenarPor] = useState('createdAt');
     const [orden, setOrden] = useState<'asc' | 'desc'>('desc');
+    const [showCreateForm, setShowCreateForm] = useState(false);
     const itemsPorPagina = 10;
 
     useEffect(() => {
@@ -65,8 +68,14 @@ const AdminDashboard = () => {
     const fetchLibros = async () => {
         try {
             setLoading(true);
+            const token = localStorage.getItem('token');
             const response = await fetch(
-                `${env.server.endpointGeneral}/libros/paginacion?pagina=${currentPage}&limite=${itemsPorPagina}&ordenarPor=${ordenarPor}&orden=${orden}`
+                `${env.server.endpointGeneral}/libros/paginacion?pagina=${currentPage}&limite=${itemsPorPagina}&ordenarPor=${ordenarPor}&orden=${orden}`,
+                {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                }
             );
             const data: PaginationData = await response.json();
 
@@ -103,7 +112,15 @@ const AdminDashboard = () => {
 
         try {
             setLoading(true);
-            const response = await fetch(`/api/libros/buscar?termino=${searchTerm}&pagina=${currentPage}&limite=${itemsPorPagina}`);
+            const token = localStorage.getItem('token');
+            const response = await fetch(
+                `${env.server.endpointGeneral}/libros/buscar?termino=${searchTerm}&pagina=${currentPage}&limite=${itemsPorPagina}`,
+                {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                }
+            );
             const data = await response.json();
 
             setLibros(data.libros);
@@ -179,7 +196,10 @@ const AdminDashboard = () => {
                         />
                         <button type="submit">Buscar</button>
                     </form>
-                    <button className="lib-add-button">
+                    <button
+                        className="lib-add-button"
+                        onClick={() => setShowCreateForm(true)}
+                    >
                         Agregar Libro
                     </button>
                 </div>
@@ -248,6 +268,16 @@ const AdminDashboard = () => {
                     </button>
                 </div>
             </div>
+
+            {showCreateForm && (
+                <CreateLibroForm
+                    onClose={() => setShowCreateForm(false)}
+                    onSuccess={() => {
+                        fetchLibros();
+                        setShowCreateForm(false);
+                    }}
+                />
+            )}
         </div>
     );
 };

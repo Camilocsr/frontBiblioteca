@@ -1,0 +1,146 @@
+.lib-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.lib-modal {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 500px; /* Reducido de 600px a 500px */
+    max-height: 80vh; /* Reducido de 90vh a 80vh */
+    overflow-y: auto;
+    padding: 15px; /* Reducido de 20px a 15px */
+    position: absolute; /* Cambiado de relative a absolute */
+    top: 50%; /* Centrado verticalmente */
+    left: 50%; /* Centrado horizontalmente */
+    transform: translate(-50%, -50%); /* Centrado preciso */
+}
+
+.lib-form {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px; /* Reducido de 15px a 10px */
+}
+
+.lib-form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.lib-form-group label {
+    margin-bottom: 3px; /* Reducido de 5px a 3px */
+    font-weight: 600;
+    font-size: 0.8rem; /* Reducido de 0.9rem a 0.8rem */
+}
+
+.lib-form-group input, 
+.lib-form-group select, 
+.lib-form-group textarea {
+    padding: 6px; /* Reducido de 8px a 6px */
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 0.8rem; /* Reducido de 0.9rem a 0.8rem */
+}
+
+.lib-form-section {
+    grid-column: 1 / -1;
+    border-top: 1px solid #eee;
+    padding-top: 10px; /* Reducido de 15px a 10px */
+}
+
+.lib-form-section h3 {
+    margin-bottom: 8px; /* Reducido de 10px a 8px */
+    font-size: 0.9rem; /* Reducido de 1rem a 0.9rem */
+}
+
+.lib-form-actions {
+    grid-column: 1 / -1;
+    display: flex;
+    justify-content: space-between;
+    margin-top: 10px; /* Reducido de 15px a 10px */
+}
+
+.lib-form-actions button {
+    padding: 8px 12px; /* Reducido de 10px 15px a 8px 12px */
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.8rem; /* Reducido de 0.9rem a 0.8rem */
+}
+
+.lib-form-actions button:first-child {
+    background-color: #f0f0f0;
+    color: #333;
+}
+
+.lib-form-actions button:last-child {
+    background-color: #007bff;
+    color: white;
+}
+
+.lib-form-actions button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.lib-error-message {
+    grid-column: 1 / -1;
+    background-color: #f8d7da;
+    color: #721c24;
+    padding: 8px; /* Reducido de 10px a 8px */
+    border-radius: 4px;
+    margin-bottom: 10px; /* Reducido de 15px a 10px */
+    font-size: 0.8rem; /* Añadido para reducir tamaño */
+}
+
+/* Responsive ajustes */
+@media (max-width: 768px) {
+    .lib-form {
+        grid-template-columns: 1fr;
+    }
+
+    .lib-form-section {
+        grid-column: 1;
+    }
+
+    .lib-modal {
+        width: 90%; /* Reducido de 95% a 90% */
+        max-width: 400px; /* Añadido límite máximo */
+    }
+}
+
+/* Estilos de campos requeridos */
+.lib-form-group label[for]:after {
+    content: '*';
+    color: red;
+    margin-left: 4px;
+    font-size: 0.7rem; /* Añadido para reducir tamaño */
+}
+
+/* Scroll personalizado (opcional) */
+.lib-modal::-webkit-scrollbar {
+    width: 6px;
+}
+
+.lib-modal::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+.lib-modal::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 3px;
+}
+
+.lib-modal::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
